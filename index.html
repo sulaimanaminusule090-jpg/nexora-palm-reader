@@ -421,53 +421,85 @@ function updateLanguage() {
 
     $("closeCameraBtn").addEventListener("click", closeCamera);
 
-    scanBtn.addEventListener("click", () => {
-      if (!imageReady || !originalImage) {
-        setStatus(t("chooseFirst"));
-        return;
-      }
+    
+scanBtn.addEventListener("click", async () => {
+  if (!imageReady || !originalImage) {
+    setStatus(t("chooseFirst"));
+    return;
+  }
 
-      try {
-        const source = originalImage;
-        const output = ctx.createImageData(source.width, source.height);
-        const src = source.data;
-        const dst = output.data;
-        const w = source.width;
-        const h = source.height;
-        const gray = new Uint8ClampedArray(w * h);
+  const previousLabel = scanBtn.textContent;
+  scanBtn.disabled = true;
+  resultBox.style.display = "none";
+  resultBox.replaceChildren();
 
-        for (let i = 0, p = 0; i < src.length; i += 4, p++) {
-          gray[p] = Math.round(
-            0.299 * src[i] +
-            0.587 * src[i + 1] +
-            0.114 * src[i + 2]
-          );
-        }
+  setStatus(
+    language.value === "ha"
+      ? "Ana aika hoton zuwa Gemini AI..."
+      : "Sending image to Gemini AI..."
+  );
 
-        for (let y = 0; y < h; y++) {
-          for (let x = 0; x < w; x++) {
-            const p = y * w + x;
-            const left = gray[y * w + Math.max(0, x - 2)];
-            const right = gray[y * w + Math.min(w - 1, x + 2)];
-            const up = gray[Math.max(0, y - 2) * w + x];
-            const down = gray[Math.min(h - 1, y + 2) * w + x];
-            const contrast = Math.abs(left - right) + Math.abs(up - down);
-            const value = Math.max(0, Math.min(255, 35 + contrast * 2.1));
-            const i = p * 4;
-            dst[i] = Math.round(value * 0.35);
-            dst[i + 1] = Math.round(value);
-            dst[i + 2] = Math.round(value * 0.92);
-            dst[i + 3] = 255;
-          }
-        }
+  try {
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
 
-        ctx.putImageData(output, 0, 0);
-        showScanResult();
-        setStatus(t("scanDone"));
-      } catch (error) {
-        setStatus(t("scanError") + error.message);
-      }
+    const response = await fetch("/api/analyze-palm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        imageBase64: dataUrl,
+        mimeType: "image/jpeg",
+        language: language.value
+      })
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "AI analysis failed. Please try again."
+      );
+    }
+
+    if (!data.result) {
+      throw new Error("No analysis was returned.");
+    }
+
+    const heading = document.createElement("h3");
+    heading.textContent =
+      language.value === "ha"
+        ? "Sakamakon Nazarin Gemini AI"
+        : "Gemini AI Analysis";
+
+    const paragraph = document.createElement("p");
+    paragraph.textContent = data.result;
+    paragraph.style.whiteSpace = "pre-wrap";
+    paragraph.style.overflowWrap = "anywhere";
+
+    resultBox.replaceChildren(heading, paragraph);
+    resultBox.style.display = "block";
+
+    setStatus(
+      language.value === "ha"
+        ? "An kammala nazarin AI."
+        : "AI analysis completed."
+    );
+  } catch (error) {
+    console.error("Palm analysis error:", error);
+
+    setStatus(
+      (language.value === "ha"
+        ? "An kasa kammala nazarin AI: "
+        : "AI analysis failed: ") +
+      error.message
+    );
+  } finally {
+    scanBtn.disabled = false;
+    scanBtn.textContent = previousLabel;
+  }
+});
+    
 
     $("clearBtn").addEventListener("click", () => {
       closeCamera();
