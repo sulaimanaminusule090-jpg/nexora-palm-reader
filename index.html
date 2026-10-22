@@ -472,9 +472,10 @@ function updateLanguage() {
       image.src = objectUrl;
     });
 
-    cameraBtn.addEventListener("click", async () 
-      => {
-        setStatus("Opening camera...");
+    
+    cameraBtn.addEventListener("click", async () => {
+      setStatus("Opening camera...");
+      
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setStatus(t("noCamera"));
         return;
