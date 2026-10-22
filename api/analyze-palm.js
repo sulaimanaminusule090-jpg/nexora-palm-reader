@@ -138,7 +138,7 @@ Palmistry cannot scientifically prove personality or predict the future.
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        body: JSON.stringify({
+                body: JSON.stringify({
           contents: [{
             parts: [
               { text: prompt },
@@ -149,7 +149,10 @@ Palmistry cannot scientifically prove personality or predict the future.
                 }
               }
             ]
-          }]
+          }],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
         })
       }
     );
@@ -169,18 +172,72 @@ if (!response.ok) {
 }
     
 
-    const result = data.candidates?.[0]?.content?.parts
+        const rawResult = data.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
       .join("\n")
       .trim();
 
-    if (!result) {
+    if (!rawResult) {
       return res.status(502).json({
         error: "Gemini returned no analysis."
       });
     }
 
-    return res.status(200).json({ result });
+    let analysis;
+
+    try {
+      analysis = JSON.parse(rawResult);
+    } catch (error) {
+      console.error("Invalid Gemini JSON:", rawResult);
+      return res.status(502).json({
+        error: "Gemini returned invalid JSON. Please try again."
+      });
+    }
+
+    if (
+      typeof analysis.report !== "string" ||
+      !Array.isArray(analysis.lines)
+    ) {
+      return res.status(502).json({
+        error: "Gemini returned incomplete palm analysis."
+      });
+    }
+
+    const allowedIds = ["heart", "head", "life", "fate"];
+
+    const lines = analysis.lines
+      .filter(line => line && allowedIds.includes(line.id))
+      .map(line => {
+        const points = Array.isArray(line.points)
+          ? line.points.filter(point =>
+              point &&
+              Number.isFinite(point.x) &&
+              Number.isFinite(point.y) &&
+              point.x >= 0 &&
+              point.x <= 1 &&
+              point.y >= 0 &&
+              point.y <= 1
+            )
+          : [];
+
+        const visible =
+          line.visible === true && points.length >= 2;
+
+        return {
+          id: line.id,
+          label: String(line.label || line.id),
+          visible,
+          confidence: Number.isFinite(line.confidence)
+            ? Math.max(0, Math.min(1, line.confidence))
+            : 0,
+          points: visible ? points.slice(0, 20) : []
+        };
+      });
+
+    return res.status(200).json({
+      result: analysis.report,
+      lines
+    });
 
   } catch (error) {
     console.error("Palm analysis error:", error);
