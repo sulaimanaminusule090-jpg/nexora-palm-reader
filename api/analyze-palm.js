@@ -130,46 +130,75 @@ Palmistry cannot scientifically prove personality or predict the future.
 `;
     
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
-        },
-                body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: imageBase64
-                }
+   
+    const requestUrl =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: imageBase64
               }
-            ]
-          }],
-          generationConfig: {
-            responseMimeType: "application/json"
-          }
-        })
+            }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      })
+    };
+
+    let response;
+    let data;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      response = await fetch(requestUrl, requestOptions);
+
+      if (response.ok) {
+        data = await response.json();
+        break;
       }
-    );
 
-    const data = await response.json();
+      const errorText = await response.text();
+      let errorData = {};
 
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (error) {
+        errorData = { error: { message: errorText } };
+      }
+
+      const retryableStatuses = [429, 500, 502, 503, 504];
+
+      if (
+        !retryableStatuses.includes(response.status) ||
+        attempt === 2
+      ) {
+        console.error("Gemini API error:", errorData);
+
+        const geminiMessage =
+          errorData?.error?.message ||
+          "Unknown Gemini API error.";
+
+        return res.status(502).json({
+          error: `Gemini API request failed (HTTP ${response.status}): ${geminiMessage}`
+        });
+      }
+
+      const waitMs = 1000 * (2 ** attempt);
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+    }
     
-if (!response.ok) {
-  console.error("Gemini API error:", data);
-
-  const geminiMessage =
-    data?.error?.message || "Unknown Gemini API error.";
-
-  return res.status(502).json({
-    error: `Gemini API request failed (HTTP ${response.status}): ${geminiMessage}`
-  });
-}
     
 
         const rawResult = data.candidates?.[0]?.content?.parts
