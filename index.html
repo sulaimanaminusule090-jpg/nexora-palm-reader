@@ -297,17 +297,25 @@
       resultBox.replaceChildren();
     }
 
-    function updateLanguage() {
-      document.documentElement.lang = language.value;
-      document.querySelectorAll("[data-i18n]").forEach(element => {
-        const key = element.dataset.i18n;
-        element.textContent = t(key);
-      });
-      if (!imageReady) setStatus(t("initial"));
-      if (resultBox.style.display === "block") {
-        showScanResult();
-      }
-    }
+    
+function updateLanguage() {
+  document.documentElement.lang = language.value;
+
+  document.querySelectorAll("[data-i18n]").forEach(element => {
+    const key = element.dataset.i18n;
+    element.textContent = t(key);
+  });
+
+  if (resultBox.style.display === "block") {
+    showScanResult();
+    setStatus(t("scanDone"));
+  } else if (imageReady) {
+    setStatus(t("loaded"));
+  } else {
+    setStatus(t("initial"));
+  }
+}
+    
 
     function showScanResult() {
       resultBox.replaceChildren();
