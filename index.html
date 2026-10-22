@@ -273,7 +273,76 @@
     let cameraStream = null;
     let imageReady = false;
     let originalImage = null;
+    function drawDetectedLines(lines) {
+      if (!originalImage) return;
 
+      ctx.putImageData(originalImage, 0, 0);
+
+      const styles = {
+        heart: {
+          color: "#ff4d88",
+          label: "HEART LINE"
+        },
+        head: {
+          color: "#ffd166",
+          label: "HEAD LINE"
+        },
+        life: {
+          color: "#35d9c5",
+          label: "LIFE LINE"
+        },
+        fate: {
+          color: "#a78bfa",
+          label: "FATE LINE"
+        }
+      };
+
+      if (!Array.isArray(lines)) return;
+
+      lines.forEach(line => {
+        const style = styles[line.id];
+
+        if (
+          !style ||
+          line.visible !== true ||
+          !Array.isArray(line.points) ||
+          line.points.length < 2
+        ) {
+          return;
+        }
+
+        ctx.beginPath();
+
+        line.points.forEach((point, index) => {
+          const x = point.x * canvas.width;
+          const y = point.y * canvas.height;
+
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = Math.max(3, canvas.width * 0.004);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.stroke();
+
+        const first = line.points[0];
+        const labelX = first.x * canvas.width;
+        const labelY = first.y * canvas.height;
+
+        ctx.font = "bold 12px Arial";
+        ctx.fillStyle = style.color;
+        ctx.fillText(
+          style.label,
+          Math.max(4, Math.min(labelX, canvas.width - 110)),
+          Math.max(16, labelY - 8)
+        );
+      });
+          }
     function t(key) {
       return translations[language.value][key] || translations.en[key] || key;
     }
@@ -465,7 +534,7 @@ scanBtn.addEventListener("click", async () => {
     if (!data.result) {
       throw new Error("No analysis was returned.");
     }
-
+drawDetectedLines(data.lines || []);
     const heading = document.createElement("h3");
     heading.textContent =
       language.value === "ha"
