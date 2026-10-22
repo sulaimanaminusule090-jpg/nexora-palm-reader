@@ -98,12 +98,18 @@ not a scientifically validated palm-reading method.
 
     const data = await response.json();
 
-    if (!response.ok) {
-      console.error("Gemini API error:", data);
-      return res.status(502).json({
-        error: "Gemini could not analyze the image. Please try again."
-      });
-    }
+    
+if (!response.ok) {
+  console.error("Gemini API error:", data);
+
+  const geminiMessage =
+    data?.error?.message || "Unknown Gemini API error.";
+
+  return res.status(502).json({
+    error: `Gemini API request failed (HTTP ${response.status}): ${geminiMessage}`
+  });
+}
+    
 
     const result = data.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
