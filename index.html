@@ -1,0 +1,511 @@
+
+<!DOCTYPE html>
+<html lang="ha">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Nexora Palm Reader - AI palm analysis and palm line scanner.">
+  <link rel="manifest" href="/manifest.json">
+  <title>Nexora Palm Reader</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: #101e30;
+      --cyan: #55e6df;
+      --text: #f4f8ff;
+      --muted: #aab9ca;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, Arial, sans-serif;
+    }
+
+    header {
+      padding: 22px 18px;
+      text-align: center;
+      border-bottom: 1px solid #223247;
+    }
+
+    .logo {
+      color: var(--cyan);
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      width: min(100% - 28px, 560px);
+      margin: 24px auto 40px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #293b50;
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    h1 { font-size: 25px; }
+    h2 { font-size: 19px; }
+
+    p {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button, select, .upload-label {
+      font: inherit;
+      border-radius: 11px;
+    }
+
+    button, .upload-label {
+      min-height: 48px;
+      border: 1px solid #375269;
+      background: #172a40;
+      color: var(--text);
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    button.primary {
+      background: var(--cyan);
+      color: #05151b;
+      font-weight: 750;
+      border: 0;
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    button:focus-visible, .upload-label:focus-within {
+      outline: 3px solid white;
+      outline-offset: 3px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      background: #172a40;
+      color: white;
+      margin: 8px 0 14px;
+    }
+
+    input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0.01;
+    }
+
+    .upload-label {
+      display: block;
+    }
+
+    #previewWrap {
+      display: none;
+      margin-top: 16px;
+    }
+
+    #preview {
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      background: #07111f;
+    }
+
+    #camera {
+      width: 100%;
+      display: none;
+      border-radius: 12px;
+      margin-top: 14px;
+      background: black;
+    }
+
+    .status {
+      padding: 12px;
+      background: #0a1726;
+      border-radius: 10px;
+      color: var(--cyan);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .result {
+      display: none;
+      line-height: 1.7;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">NEXORA</div>
+    <div>Palm Reader · AI Hand Analysis</div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h1>Palm Reader</h1>
+      <p>
+        Duba hoton tafin hannunka, ka ga tsarin layukan da
+        scanner ya inganta, sannan ka karanta rahoton gwaji.
+      </p>
+
+      <label for="language">Harshen rahoto</label>
+      <select id="language">
+        <option value="ha">Hausa</option>
+        <option value="en">English</option>
+      </select>
+
+      <div class="actions">
+        <button id="cameraBtn" type="button">📷 Buɗe Camera</button>
+
+        <label class="upload-label" for="photo">
+          🖼️ Zaɓi Hoto
+        </label>
+      </div>
+
+      <input
+        id="photo"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+      >
+
+      <video id="camera" autoplay playsinline muted></video>
+
+      <div class="actions" id="cameraActions" hidden
+           style="margin-top:10px">
+        <button id="captureBtn" class="primary" type="button">
+          Ɗauki Hoto
+        </button>
+        <button id="closeCameraBtn" type="button">
+          Rufe Camera
+        </button>
+      </div>
+
+      <div id="previewWrap">
+        <canvas id="preview"></canvas>
+        <p class="small">
+          Ana sarrafa hoton a wayarka a wannan matakin gwaji.
+        </p>
+      </div>
+
+      <div class="actions" style="margin-top:14px">
+        <button id="scanBtn" class="primary" type="button" disabled>
+          🔎 Duba Layukan Hannu
+        </button>
+        <button id="clearBtn" type="button">Share Hoto</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Sakamakon Scanner</h2>
+      <div id="status" class="status" role="status" aria-live="polite">
+        Zaɓi hoto ko buɗe camera domin farawa.
+      </div>
+      <div id="result" class="result"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Game da wannan gwaji</h2>
+      <p>
+        Wannan sigar farko tana inganta bambancin haske da duhun
+        hoton domin taimakawa ganin layuka. Ba ta tabbatar da cewa
+        ta gano ainihin layukan tafin hannu daidai ba, kuma ba ta
+        haɗu da AI API ba tukuna.
+      </p>
+      <p>
+        Karatun soyayya, halaye ko makomar rayuwa na gargajiya
+        nishaɗi ne kawai, ba tabbatacciyar hasashen kimiyya ba.
+      </p>
+    </section>
+  </main>
+
+  <footer>Nexora Palm Reader · MVP v0.1</footer>
+
+  <script>
+    const photoInput = document.getElementById("photo");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const camera = document.getElementById("camera");
+    const cameraActions = document.getElementById("cameraActions");
+    const previewWrap = document.getElementById("previewWrap");
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const scanBtn = document.getElementById("scanBtn");
+    const statusBox = document.getElementById("status");
+    const resultBox = document.getElementById("result");
+    const language = document.getElementById("language");
+
+    let cameraStream = null;
+    let imageReady = false;
+    let originalImage = null;
+
+    function setStatus(message) {
+      statusBox.textContent = message;
+    }
+
+    function closeCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      camera.srcObject = null;
+      camera.style.display = "none";
+      cameraActions.hidden = true;
+    }
+
+    function resetResults() {
+      resultBox.style.display = "none";
+      resultBox.replaceChildren();
+    }
+
+    function showImage(image) {
+      const maxSide = 1200;
+      let width = image.naturalWidth || image.videoWidth;
+      let height = image.naturalHeight || image.videoHeight;
+
+      if (!width || !height) {
+        setStatus("Ba a iya karanta hoton ba. Gwada wani hoto.");
+        return;
+      }
+
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      originalImage = ctx.getImageData(
+        0, 0, canvas.width, canvas.height
+      );
+
+      imageReady = true;
+      scanBtn.disabled = false;
+      previewWrap.style.display = "block";
+      resetResults();
+      setStatus("An ɗora hoto. Danna “Duba Layukan Hannu”.");
+    }
+
+    photoInput.addEventListener("change", () => {
+      const file = photoInput.files && photoInput.files[0];
+      if (!file) return;
+
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        setStatus("Zaɓi hoto na JPG, PNG ko WEBP kawai.");
+        photoInput.value = "";
+        return;
+      }
+
+      if (file.size > 8 * 1024 * 1024) {
+        setStatus("Hoton ya yi girma. Iyakar wannan gwaji ita ce 8 MB.");
+        photoInput.value = "";
+        return;
+      }
+
+      closeCamera();
+      imageReady = false;
+      scanBtn.disabled = true;
+
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      image.onload = () => {
+        showImage(image);
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        setStatus("An kasa buɗe hoton. Gwada wani hoto.");
+      };
+
+      image.src = objectUrl;
+    });
+
+    cameraBtn.addEventListener("click", async () => {
+      if (!navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia) {
+        setStatus(
+          "Camera ba ta samuwa. Buɗe manhajar ta HTTPS a Chrome, " +
+          "ko ka yi amfani da Zaɓi Hoto."
+        );
+        return;
+      }
+
+      try {
+        closeCamera();
+
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" }
+          }
+        });
+
+        camera.srcObject = cameraStream;
+        camera.style.display = "block";
+        cameraActions.hidden = false;
+        setStatus("An buɗe camera. Ka nuna tafin hannunka a haske mai kyau.");
+      } catch (error) {
+        setStatus(
+          "Ba a iya buɗe camera ba. Duba izinin camera na Chrome " +
+          "ko gwada Zaɓi Hoto. " + error.name
+        );
+      }
+    });
+
+    document.getElementById("captureBtn").addEventListener("click", () => {
+      if (!camera.videoWidth || !camera.videoHeight) {
+        setStatus("Jira camera ta gama buɗewa sannan ka sake gwadawa.");
+        return;
+      }
+
+      showImage(camera);
+      closeCamera();
+    });
+
+    document.getElementById("closeCameraBtn").addEventListener(
+      "click", closeCamera
+    );
+
+    scanBtn.addEventListener("click", () => {
+      if (!imageReady || !originalImage) {
+        setStatus("Da farko ka zaɓi hoto.");
+        return;
+      }
+
+      try {
+        const source = originalImage;
+        const output = ctx.createImageData(source.width, source.height);
+        const src = source.data;
+        const dst = output.data;
+        const w = source.width;
+        const h = source.height;
+
+        // Convert the image to grayscale.
+        const gray = new Uint8ClampedArray(w * h);
+
+        for (let i = 0, p = 0; i < src.length; i += 4, p++) {
+          gray[p] = Math.round(
+            0.299 * src[i] +
+            0.587 * src[i + 1] +
+            0.114 * src[i + 2]
+          );
+        }
+
+        // Apply a simple local contrast enhancement.
+        // This is a visual aid, not a validated palm-line detector.
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const p = y * w + x;
+            const left = gray[y * w + Math.max(0, x - 2)];
+            const right = gray[y * w + Math.min(w - 1, x + 2)];
+            const up = gray[Math.max(0, y - 2) * w + x];
+            const down = gray[Math.min(h - 1, y + 2) * w + x];
+
+            const contrast = Math.abs(left - right) +
+                             Math.abs(up - down);
+            const value = Math.max(
+              0, Math.min(255, 35 + contrast * 2.1)
+            );
+
+            const i = p * 4;
+            dst[i] = Math.round(value * 0.35);
+            dst[i + 1] = Math.round(value);
+            dst[i + 2] = Math.round(value * 0.92);
+            dst[i + 3] = 255;
+          }
+        }
+
+        ctx.putImageData(output, 0, 0);
+
+        // Mark the result as a processed preview, not a diagnosis.
+        resultBox.replaceChildren();
+
+        const heading = document.createElement("h3");
+        const paragraph = document.createElement("p");
+        const disclaimer = document.createElement("p");
+
+        if (language.value === "ha") {
+          heading.textContent = "An gama gwajin scanner";
+          paragraph.textContent =
+            "An inganta bambancin haske domin taimakawa ganin " +
+            "wasu layuka da alamun hoton. Wannan sakamako ba ya " +
+            "tabbatar da gano Heart Line, Head Line ko Life Line.";
+          disclaimer.textContent =
+            "Wannan demo ne kawai. Ba a haɗa AI ba tukuna, " +
+            "kuma hoton bai tabbatar da halaye ko makomar mutum ba.";
+        } else {
+          heading.textContent = "Scanner test complete";
+          paragraph.textContent =
+            "Image contrast has been enhanced to help reveal " +
+            "visible creases. This does not reliably identify " +
+            "the heart, head, or life lines.";
+          disclaimer.textContent =
+            "This is a demo only. AI is not connected yet, and " +
+            "the image cannot establish personality or future events.";
+        }
+
+        resultBox.append(heading, paragraph, disclaimer);
+        resultBox.style.display = "block";
+        setStatus("An kammala gwajin sarrafa hoto a wayarka.");
+      } catch (error) {
+        setStatus("An samu matsala wajen sarrafa hoton: " + error.message);
+      }
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      closeCamera();
+      photoInput.value = "";
+      imageReady = false;
+      originalImage = null;
+      canvas.width = 1;
+      canvas.height = 1;
+      previewWrap.style.display = "none";
+      scanBtn.disabled = true;
+      resetResults();
+      setStatus("An share hoton daga shafin. Za ka iya fara sabo.");
+    });
+
+    // Register the service worker for PWA installation support.
+    if ("serviceWorker" in navigator && location.protocol === "https:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {
+          console.log("Service worker registration failed.");
+        });
+      });
+    }
+  </script>
+</body>
+</html>
