@@ -541,7 +541,22 @@ scanBtn.addEventListener("click", async () => {
       })
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+let data;
+
+try {
+  data = JSON.parse(responseText);
+} catch (error) {
+  console.error(
+    "Non-JSON API response:",
+    response.status,
+    responseText
+  );
+
+  throw new Error(
+    `Server returned a non-JSON response (HTTP ${response.status}). Please check the server logs.`
+  );
+}
 
     if (!response.ok) {
       throw new Error(
