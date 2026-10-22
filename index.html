@@ -178,8 +178,7 @@
 
     <section class="panel">
       <h2 data-i18n="aboutTitle">About This Test</h2>
-      <p data-i18n="aboutText">
-        This first version enhances image contrast to help make creases more visible. It does not reliably identify palm lines, and it is not connected to an AI API yet.
+      <p data-i18n="aboutText: "Nexora Palm Reader uses AI to analyze visible palm creases and mark lines it can identify. Results may be inaccurate, and unclear lines may remain unmarked.",
       </p>
       <p data-i18n="disclaimer">
         Traditional palm-reading interpretations about love, personality, or the future are for entertainment only and are not scientifically proven predictions.
@@ -237,7 +236,7 @@
         resultsTitle: "Sakamakon Na'urar Bincike",
         initial: "Zaɓi hoto ko buɗe kyamara domin farawa.",
         aboutTitle: "Game da Wannan Gwaji",
-        aboutText: "Wannan sigar tana inganta bambancin haske domin taimakawa ganin layukan hannu. Ba ta iya gano ainihin layukan hannu da tabbaci, kuma ba a haɗa ta da AI API ba tukuna.",
+        aboutText: "Nexora Palm Reader yana amfani da AI wajen nazarin layukan tafin hannu da ake iya gani. AI na iya yin kuskure, kuma ba za a nuna layin da ba a iya ganewa da tabbaci ba.",
         disclaimer: "Fassarar gargajiya game da soyayya, halaye ko makomar rayuwa nishaɗi ce kawai, ba tabbatacciyar hasashen kimiyya ba.",
         badType: "Zaɓi hoton JPG, PNG ko WEBP.",
         tooLarge: "Hoton ya yi girma. Iyakar wannan gwaji ita ce 8 MB.",
@@ -330,16 +329,28 @@
         ctx.lineJoin = "round";
         ctx.stroke();
 
-        const first = line.points[0];
-        const labelX = first.x * canvas.width;
-        const labelY = first.y * canvas.height;
+        
+const first = line.points[0];
+
+const labelOffsets = {
+  heart: { x: 0, y: -14 },
+  head: { x: -85, y: 28 },
+  life: { x: 35, y: -14 },
+  fate: { x: 35, y: 30 }
+};
+
+const offset = labelOffsets[line.id] || { x: 0, y: -14 };
+const labelX = first.x * canvas.width + offset.x;
+const labelY = first.y * canvas.height + offset.y;
+        
 
         ctx.font = "bold 12px Arial";
         ctx.fillStyle = style.color;
-        ctx.fillText(
-          style.label,
-          Math.max(4, Math.min(labelX, canvas.width - 110)),
-          Math.max(16, labelY - 8)
+          ctx.fillText(
+  style.label,
+  Math.max(4, Math.min(labelX, canvas.width - 110)),
+  Math.max(16, Math.min(labelY, canvas.height - 4))
+);
         );
       });
           }
