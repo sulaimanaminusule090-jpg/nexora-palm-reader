@@ -204,7 +204,7 @@ Palmistry cannot scientifically prove personality or predict the future.
 
       const waitMs = 1000 * (2 ** attempt);
       await new Promise(resolve => setTimeout(resolve, waitMs));
-      
+    }  
     
     
 
