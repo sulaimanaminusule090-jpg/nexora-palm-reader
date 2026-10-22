@@ -1,0 +1,15 @@
+
+{
+  "id": "/",
+  "name": "Nexora Palm Reader",
+  "short_name": "Palm Reader",
+  "description": "Nexora AI palm scanning and analysis",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "lang": "ha",
+  "categories": ["lifestyle", "utilities"]
+}
