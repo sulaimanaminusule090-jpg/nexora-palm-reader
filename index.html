@@ -549,11 +549,18 @@ drawDetectedLines(data.lines || []);
     resultBox.replaceChildren(heading, paragraph);
     resultBox.style.display = "block";
 
-    setStatus(
-      language.value === "ha"
-        ? "An kammala nazarin AI."
-        : "AI analysis completed."
-    );
+    const detectedLineCount = (data.lines || []).filter(
+  line =>
+    line.visible === true &&
+    Array.isArray(line.points) &&
+    line.points.length >= 2
+).length;
+
+setStatus(
+  language.value === "ha"
+    ? `An kammala nazarin AI. An gano layuka: ${detectedLineCount}/4.`
+    : `AI analysis completed. Lines detected: ${detectedLineCount}/4.`
+);
   } catch (error) {
     console.error("Palm analysis error:", error);
 
