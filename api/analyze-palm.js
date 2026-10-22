@@ -178,14 +178,21 @@ Palmistry cannot scientifically prove personality or predict the future.
         errorData = { error: { message: errorText } };
       }
 
-      const retryableStatuses = [429, 500, 502, 503, 504];
+      
+      console.error("Gemini API error:", errorData);
+
+      if (response.status === 429) {
+        return res.status(429).json({
+          error: "Palm Reader has reached its Gemini API quota. Please try again later or check your Gemini API quota and billing settings."
+        });
+      }
+
+      const retryableStatuses = [500, 502, 503, 504];
 
       if (
         !retryableStatuses.includes(response.status) ||
         attempt === 2
       ) {
-        console.error("Gemini API error:", errorData);
-
         const geminiMessage =
           errorData?.error?.message ||
           "Unknown Gemini API error.";
@@ -197,7 +204,7 @@ Palmistry cannot scientifically prove personality or predict the future.
 
       const waitMs = 1000 * (2 ** attempt);
       await new Promise(resolve => setTimeout(resolve, waitMs));
-    }
+      
     
     
 
